@@ -14,17 +14,17 @@ from response import get_reply
 from llm import generate_reply
 from database import init_db, log_mood
 
-st.set_page_config(page_title="Mental Health Support Chatbot", page_icon="🌼")
+st.set_page_config(page_title="Mental Health Support Chatbot", page_icon="🧠")
 init_db()
 
 # emotion -> (emoji, chip background, chip text colour)
 EMOTION_META = {
-    "joy":      ("😊", "#fff3b0", "#8a6d00"),
-    "sadness":  ("😢", "#d6e6ff", "#2b5aa6"),
-    "fear":     ("😟", "#e8dcff", "#5b3fa0"),
-    "anger":    ("😠", "#ffd9d6", "#a63a30"),
-    "love":     ("💖", "#ffd6ec", "#a3306f"),
-    "surprise": ("😮", "#d5f5e3", "#1e7a4a"),
+    "joy":      ("😊", "#fff3c4", "#7a5b00"),
+    "sadness":  ("😢", "#dbe8fb", "#25508f"),
+    "fear":     ("😟", "#e6e3fa", "#4a3f8f"),
+    "anger":    ("😠", "#fddedb", "#9c342b"),
+    "love":     ("❤️", "#fde8d7", "#9a4a12"),
+    "surprise": ("😮", "#d8f3e6", "#1d6f47"),
 }
 
 QUICK_STARTS = [
@@ -47,117 +47,98 @@ TIPS = [
 CHEERS = [
     "You showed up today, and that already takes strength. 💪",
     "Bad days end. You've survived every one of yours so far. 🌅",
-    "Be as kind to yourself as you would be to a friend. 🫶",
+    "Be as kind to yourself as you would be to a friend. 🤝",
     "Even the sun needs to set to rise again. ☀️",
-    "You're doing better than you think. 🌈",
+    "You're doing better than you think. 📈",
     "One tiny win today is enough. 🏆",
 ]
 
-HAPPY_CSS = """
+MAIN_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 html, body, .stApp, .stMarkdown, .stMarkdown p, textarea, button {
-    font-family: 'Nunito', sans-serif;
+    font-family: 'Inter', sans-serif;
 }
-.stApp {
-    background: linear-gradient(120deg, #ffe0d1, #ffd6ec, #e0d9ff, #d3ecff, #d5f5e3, #fff3b0);
-    background-size: 300% 300%;
-    animation: drift 20s ease infinite;
-}
-@keyframes drift {
-    0% {background-position: 0% 50%}
-    50% {background-position: 100% 50%}
-    100% {background-position: 0% 50%}
-}
+.stApp { background: linear-gradient(160deg, #eef3f8 0%, #e3edf1 100%); }
 [data-testid="stHeader"] { background: transparent; }
 
 /* ---------- Hero banner ---------- */
 .hero {
     position: relative; overflow: hidden;
-    padding: 1.6rem 1.8rem; margin-bottom: 1.2rem;
-    border-radius: 28px; color: #fff;
-    background: linear-gradient(135deg, #ff9a8b 0%, #ff6a88 50%, #ff99ac 100%);
-    box-shadow: 0 10px 30px rgba(255, 106, 136, 0.35);
+    padding: 1.7rem 1.9rem; margin-bottom: 1.2rem;
+    border-radius: 18px; color: #fff;
+    background: linear-gradient(135deg, #162a54 0%, #1a5f7a 60%, #128c96 100%);
+    box-shadow: 0 10px 28px rgba(22, 42, 84, 0.28);
 }
-.hero-title { font-size: 1.9rem; font-weight: 800; line-height: 1.2; }
-.hero-sub { margin-top: .4rem; font-size: 1.05rem; opacity: .97; }
+.hero::before, .hero::after {
+    content: ""; position: absolute; border-radius: 50%;
+    background: rgba(255, 255, 255, 0.07);
+}
+.hero::before { width: 230px; height: 230px; top: -80px; right: -50px; }
+.hero::after { width: 140px; height: 140px; bottom: -60px; right: 130px; }
+.hero-title { font-size: 1.75rem; font-weight: 800; line-height: 1.2; position: relative; }
+.hero-sub { margin-top: .45rem; font-size: 1rem; opacity: .92; position: relative; }
 .hero-note {
-    display: inline-block; margin-top: .8rem; padding: .25rem .8rem;
-    background: rgba(255,255,255,.25); border-radius: 999px; font-size: .82rem;
-}
-.hero .float { position: absolute; font-size: 1.9rem; animation: bob 4s ease-in-out infinite; }
-.f1 { top: 10%; right: 6%; }
-.f2 { top: 52%; right: 18%; animation-delay: 1s !important; }
-.f3 { top: 14%; right: 30%; animation-delay: 2s !important; }
-@keyframes bob {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-10px) rotate(8deg); }
-}
-.wave { display: inline-block; animation: wave 2.2s infinite; transform-origin: 70% 70%; }
-@keyframes wave {
-    0%, 60%, 100% { transform: rotate(0deg); }
-    10%, 30% { transform: rotate(16deg); }
-    20% { transform: rotate(-8deg); }
-    40% { transform: rotate(-4deg); }
-    50% { transform: rotate(10deg); }
+    display: inline-block; margin-top: .9rem; padding: .28rem .85rem; position: relative;
+    background: rgba(255,255,255,.16); border-radius: 8px; font-size: .8rem;
 }
 
 /* ---------- Chat bubbles ---------- */
 [data-testid="stChatMessage"] {
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid #ffffff;
-    border-radius: 22px 22px 22px 6px;
+    background: #ffffff;
+    border: 1px solid #dde5ee;
+    border-radius: 16px 16px 16px 4px;
     padding: .9rem 1.1rem;
     margin-right: 10%;
-    box-shadow: 0 4px 14px rgba(255, 120, 150, 0.18);
-    animation: pop .35s ease;
+    box-shadow: 0 2px 10px rgba(22, 42, 84, 0.07);
+    animation: pop .3s ease;
 }
 [data-testid="stChatMessage"]:has(.u-mark) {
-    background: linear-gradient(135deg, #ffb199, #ff7eb3);
-    border-radius: 22px 22px 6px 22px;
+    background: linear-gradient(135deg, #1a5f7a, #128c96);
+    border: none;
+    border-radius: 16px 16px 4px 16px;
     margin-right: 0; margin-left: 15%;
     flex-direction: row-reverse;
 }
-.u-mark { color: #fff; font-weight: 700; text-align: right; }
+.u-mark { color: #fff; font-weight: 600; text-align: right; }
 @keyframes pop {
-    from { opacity: 0; transform: translateY(10px) scale(.97); }
+    from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: none; }
 }
 
 /* ---------- Chips and cards ---------- */
 .chip {
-    display: inline-block; padding: .15rem .75rem; margin: .5rem .35rem 0 0;
-    border-radius: 999px; font-size: .8rem; font-weight: 700;
+    display: inline-block; padding: .15rem .7rem; margin: .5rem .35rem 0 0;
+    border-radius: 8px; font-size: .78rem; font-weight: 600;
 }
-.chip-grey { background: #eef0f3; color: #555; }
+.chip-grey { background: #eef1f5; color: #4b5563; }
 .tool-card {
-    margin-top: .8rem; padding: .8rem 1rem; border-radius: 16px;
-    background: linear-gradient(135deg, #e3fbe9, #d9f2ff);
-    border-left: 5px solid #5bc98a;
+    margin-top: .8rem; padding: .8rem 1rem; border-radius: 10px;
+    background: #eaf6f7; border-left: 4px solid #128c96;
 }
 .side-card {
-    padding: .9rem 1rem; margin-bottom: .6rem; border-radius: 18px;
-    background: linear-gradient(135deg, #fff6d6, #ffe3ef);
-    box-shadow: 0 3px 10px rgba(255,150,120,.15); text-align: center;
+    padding: .9rem 1rem; margin-bottom: .6rem; border-radius: 12px;
+    background: #ffffff; border: 1px solid #dde5ee;
+    box-shadow: 0 2px 8px rgba(22, 42, 84, 0.06); text-align: center;
 }
-.vibe-emoji { font-size: 2.6rem; line-height: 1.1; }
+.vibe-emoji { font-size: 2.4rem; line-height: 1.1; }
 
 /* ---------- Buttons, sidebar, input ---------- */
-[data-testid="stSidebar"] { background: rgba(255, 255, 255, 0.6); }
+[data-testid="stSidebar"] { background: rgba(255, 255, 255, 0.72); }
 .stButton > button {
-    border-radius: 999px; border: 1px solid #f7b89c;
-    background: #ffffff; color: #5a3e36; font-weight: 700;
+    border-radius: 10px; border: 1px solid #c5d3e0;
+    background: #ffffff; color: #1f3a5f; font-weight: 600;
     transition: all .15s ease;
 }
 .stButton > button:hover {
-    transform: translateY(-2px); border-color: #ff8a65; color: #ff6f47;
-    box-shadow: 0 6px 14px rgba(255,138,101,.25);
+    transform: translateY(-1px); border-color: #128c96; color: #128c96;
+    box-shadow: 0 4px 12px rgba(18, 140, 150, .2);
 }
-[data-testid="stChatInput"] { border-radius: 28px; }
+[data-testid="stChatInput"] { border-radius: 14px; }
 </style>
 """
 
-# Calm, plain style used right after a crisis message
+# Plain style used right after a crisis message
 CALM_CSS = """
 <style>
 .stApp { background: #eef2f6; }
@@ -168,18 +149,18 @@ CALM_CSS = """
 </style>
 """
 
-HERO_HTML = """<div class="hero"><span class="float f1">🌈</span><span class="float f2">✨</span><span class="float f3">🦋</span><div class="hero-title">Smart Mental Health Support Chatbot</div><div class="hero-sub"><span class="wave">👋</span> Your friendly space to talk, breathe and feel a little lighter.</div><div class="hero-note">🛡️ A support tool, not a therapist. In a crisis, please contact a helpline.</div></div>"""
+HERO_HTML = """<div class="hero"><div class="hero-title">Smart Mental Health Support Chatbot</div><div class="hero-sub">A private space to talk, check in with yourself and feel a little steadier.</div><div class="hero-note">🛡️ A support tool, not a therapist. In a crisis, please contact a helpline.</div></div>"""
 
 # ---------- State ----------
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "assistant",
-         "content": "Hi there! 🌼 I'm so glad you stopped by. I'm here to listen, "
-                    "with no judgement. How are you feeling today?"}
+         "content": "Hi there! I'm here to listen, with no judgement. "
+                    "How are you feeling today?"}
     ]
 
 crisis_mode = st.session_state.messages[-1].get("crisis", False)
-st.markdown(CALM_CSS if crisis_mode else HAPPY_CSS, unsafe_allow_html=True)
+st.markdown(CALM_CSS if crisis_mode else MAIN_CSS, unsafe_allow_html=True)
 
 
 def set_quick(text):
@@ -206,18 +187,18 @@ with st.sidebar:
 
     st.markdown("---")
     last = st.session_state.get("last_emotion")
-    v_emoji = EMOTION_META[last][0] if last else "🌼"
+    v_emoji = EMOTION_META[last][0] if last else "🧠"
     v_label = last.capitalize() if last else "Waiting to hear from you"
     st.markdown(
         f'<div class="side-card"><div class="vibe-emoji">{v_emoji}</div>'
-        f'<div>Current vibe</div><b>{v_label}</b></div>',
+        f'<div>Current mood</div><b>{v_label}</b></div>',
         unsafe_allow_html=True,
     )
     tip = TIPS[date.today().toordinal() % len(TIPS)]
-    st.markdown(f'<div class="side-card">✨ <b>Tip of the day</b><br>{tip}</div>',
+    st.markdown(f'<div class="side-card">💡 <b>Tip of the day</b><br>{tip}</div>',
                 unsafe_allow_html=True)
 
-    if st.button("🎈 Cheer me up"):
+    if st.button("⚡ Give me a boost"):
         st.session_state.cheer = random.choice(CHEERS)
     if st.session_state.get("cheer"):
         st.markdown(f'<div class="side-card">{st.session_state.cheer}</div>',
@@ -230,11 +211,11 @@ with st.sidebar:
 # ---------- Chat history ----------
 for m in st.session_state.messages:
     if m["role"] == "user":
-        avatar = "🙂"
+        avatar = "👤"
     elif m.get("crisis"):
-        avatar = None            # plain default icon, no emoji in crisis mode
+        avatar = None            # plain default icon in crisis mode
     else:
-        avatar = "🌼"
+        avatar = "🧠"
 
     with st.chat_message(m["role"], avatar=avatar):
         if m["role"] == "user":
@@ -261,13 +242,13 @@ for m in st.session_state.messages:
         if m.get("tool"):
             name, instruction = m["tool"]
             st.markdown(
-                f'<div class="tool-card">🌿 <b>Try this: {html.escape(name)}</b><br>'
+                f'<div class="tool-card">🧘 <b>Try this: {html.escape(name)}</b><br>'
                 f'{html.escape(instruction)}</div>',
                 unsafe_allow_html=True,
             )
 
 if st.session_state.pop("celebrate", False):
-    st.balloons()
+    st.toast("Great to hear that! 🎉")
 
 # ---------- Quick-start buttons (only at the start of a chat) ----------
 if len(st.session_state.messages) == 1:
@@ -292,7 +273,7 @@ if prompt:
             "crisis": True,
         })
     else:
-        with st.spinner("Listening carefully 💭"):
+        with st.spinner("Listening carefully..."):
             emotion, conf, sentiment, _ = predict_emotion(prompt)
             template_reply, tool = get_reply(emotion, conf)
             llm_reply = generate_reply(st.session_state.messages, emotion, conf)
